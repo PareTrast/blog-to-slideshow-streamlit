@@ -1,0 +1,6 @@
+[client]
+showErrorDetails = true
+
+[server]
+runOnSave = true
+folderWatchBlacklist = ["C:\\Users\\nrmlc\\blog-to-slideshow-streamlit\\.venv\\Lib\\site-packages\\torch\\*", "C:\\Users\\nrmlc\\blog-to-slideshow-streamlit\\.venv\\Lib\\site-packages\\transformers\\*"]
