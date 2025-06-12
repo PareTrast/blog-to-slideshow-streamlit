@@ -265,4 +265,4 @@ with st.expander("About This App"):
     * [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) and [Requests](https://requests.readthedocs.io/en/latest/) for web content extraction
     """)
 
-st.write("Built with ❤️ by Your Name/Alias (if desired)")
+st.write("Built with ❤️ by KD")
