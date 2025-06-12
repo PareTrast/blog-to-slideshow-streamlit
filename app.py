@@ -26,9 +26,43 @@ torch.classes.__path__ = []
 print("DEBUG app.py: Torch path patched.")
 # --- END PATCH ---
 
+# --- NLTK Data Download Function (NEW) ---
+@st.cache_resource
+def download_nltk_data():
+    """
+    Downloads NLTK data to a temporary directory accessible by Streamlit.
+    This function will run only once per app instance due to st.cache_resource.
+    """
+    # Create a temporary directory for NLTK data
+    nltk_data_dir = os.path.join(os.getcwd(), "nltk_data") # Create in current working directory
+    os.makedirs(nltk_data_dir, exist_ok=True)
+    
+    # Add this directory to NLTK's data path
+    nltk.data.path.append(nltk_data_dir)
+
+    print(f"DEBUG app.py: Attempting to download NLTK 'punkt' and 'punkt_tab' data to: {nltk_data_dir}")
+    with st.spinner("Downloading NLTK data (once per app instance)..."):
+        try:
+            # Download 'punkt' for sent_tokenize
+            nltk.download('punkt', download_dir=nltk_data_dir, quiet=True)
+            # Download 'punkt_tab' specifically as per the error
+            nltk.download('punkt_tab', download_dir=nltk_data_dir, quiet=True)
+            print("DEBUG app.py: NLTK 'punkt' and 'punkt_tab' data downloaded successfully.")
+        except Exception as e:
+            st.error(f"Error downloading NLTK data: {e}")
+            print(f"DEBUG app.py: Failed to download NLTK data: {e}")
+            # If download fails, remove the directory to force retry on next run
+            import shutil
+            if os.path.exists(nltk_data_dir):
+                shutil.rmtree(nltk_data_dir)
+            raise # Re-raise to prevent app from running without data
+
+# --- Call the NLTK data download function at app startup ---
+download_nltk_data()
+
+
 from summarizer_logic import get_webpage_text, generate_summary
 print("DEBUG app.py: summarizer_logic imported.")
-
 
 # --- HELPER FUNCTION FOR SLIDESHOW CHUNKING (remains the same) ---
 def split_summary_into_chunks(summary_text, max_chars_per_chunk=350):
@@ -67,6 +101,7 @@ def split_summary_into_chunks(summary_text, max_chars_per_chunk=350):
         for i in range(0, len(summary_text), max_chars_per_chunk):
             fallback_chunks.append(summary_text[i:i+max_chars_per_chunk].strip())
         return fallback_chunks
+    
     return chunks
 
 # --- Helper function to generate an image from text (remains the same) ---
@@ -213,7 +248,7 @@ else:
 
 st.markdown("---")
 
-# --- About Section (MODIFIED with Donation Button) ---
+# --- About Section ---
 with st.expander("About This App"):
     st.markdown("""
     This application leverages advanced **Natural Language Processing (NLP)** to provide concise summaries of web articles.
@@ -232,15 +267,13 @@ with st.expander("About This App"):
     * [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) and [Requests](https://requests.readthedocs.io/en/latest/) for web content extraction
     """)
 
-    # --- NEW: Buy Me a Coffee Donation Button ---
-    st.markdown("---") # Separator for visual clarity
+    st.markdown("---")
     st.markdown(
         """
         If you find this app useful and would like to support its development, 
-        you can [**Buy Me a Coffee! ☕**](https://www.buymeacoffee.com/nrmlcnsmr) 
+        you can [**Buy Me a Coffee! ☕**](https://www.buymeacoffee.com/YOUR_BUY_ME_A_COFFEE_USERNAME) 
         Your support helps keep this app running and improved. Thank you!
         """
     )
-    # IMPORTANT: Replace "YOUR_BUY_ME_A_COFFEE_USERNAME" with your actual username/link!
 
-st.write("Built with ❤️ by KD")
+st.write("Built with ❤️ by Your Name/Alias (if desired)")
