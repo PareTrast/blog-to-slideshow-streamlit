@@ -9,7 +9,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from PIL import Image, ImageDraw, ImageFont
 import io
-import zipfile # NEW: Import zipfile
+import zipfile
 
 print("DEBUG app.py: Imports successful.")
 
@@ -32,72 +32,55 @@ print("DEBUG app.py: summarizer_logic imported.")
 
 # --- HELPER FUNCTION FOR SLIDESHOW CHUNKING (remains the same) ---
 def split_summary_into_chunks(summary_text, max_chars_per_chunk=350):
-    """
-    Splits summary text into chunks, primarily by sentences using NLTK,
-    but falling back to character limit if sentences are too long or absent.
-    """
     if not summary_text:
         return ["No summary available."]
-
     chunks = []
     current_chunk_sentences = []
-
     sentences = sent_tokenize(summary_text)
-
     if not sentences:
         print("DEBUG app.py: NLTK returned no sentences. Falling back to char-based split.")
         fallback_chunks = []
         for i in range(0, len(summary_text), max_chars_per_chunk):
             fallback_chunks.append(summary_text[i:i+max_chars_per_chunk].strip())
         return fallback_chunks
-
     for sentence in sentences:
         potential_chunk = " ".join(current_chunk_sentences + [sentence])
-
         if len(potential_chunk) <= max_chars_per_chunk:
             current_chunk_sentences.append(sentence)
         else:
             if current_chunk_sentences:
                 chunks.append(" ".join(current_chunk_sentences).strip())
             current_chunk_sentences = [sentence]
-
             if len(sentence) > max_chars_per_chunk:
                 print(f"DEBUG app.py: Found a very long sentence ({len(sentence)} chars). Splitting by char.")
                 if current_chunk_sentences:
                     chunks.append(" ".join(current_chunk_sentences).strip())
                     current_chunk_sentences = []
-
                 for i in range(0, len(sentence), max_chars_per_chunk):
                     chunks.append(sentence[i:i+max_chars_per_chunk].strip())
                 current_chunk_sentences = []
-
     if current_chunk_sentences:
         chunks.append(" ".join(current_chunk_sentences).strip())
-
     if not chunks or any(len(c) > max_chars_per_chunk * 1.5 for c in chunks) or (len(chunks) == 1 and len(summary_text) > max_chars_per_chunk * 1.5):
         print("DEBUG app.py: Final fallback to character-based splitting (post-NLTK check).")
         fallback_chunks = []
         for i in range(0, len(summary_text), max_chars_per_chunk):
             fallback_chunks.append(summary_text[i:i+max_chars_per_chunk].strip())
         return fallback_chunks
-    
     return chunks
 
 # --- Helper function to generate an image from text (remains the same) ---
-# Ensure your font_path is correct for your system or a default font is used if it fails
 def generate_slide_image(text, slide_number, image_width=1080, image_height=1080, bg_color=(255, 255, 255), text_color=(0, 0, 0)):
     image = Image.new("RGB", (image_width, image_height), color=bg_color)
     draw = ImageDraw.Draw(image)
-
     try:
-        font_path = "arial.ttf" # Adjust as per your OS or provide a full path if needed
+        font_path = "arial.ttf"
         font_size = 40
         font = ImageFont.truetype(font_path, font_size)
     except IOError:
         print(f"DEBUG app.py: Font not found at {font_path}. Using default font.")
         font = ImageFont.load_default()
         font_size = 20
-
     lines = []
     words = text.split()
     current_line = []
@@ -109,17 +92,14 @@ def generate_slide_image(text, slide_number, image_width=1080, image_height=1080
             lines.append(" ".join(current_line))
             current_line = [word]
     lines.append(" ".join(current_line))
-
     total_text_height = sum(draw.textbbox((0,0), line, font=font)[3] - draw.textbbox((0,0), line, font=font)[1] for line in lines)
     y_text = (image_height - total_text_height) / 2
-
     for line in lines:
         text_bbox = draw.textbbox((0,0), line, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         x_text = (image_width - text_width) / 2
         draw.text((x_text, y_text), line, font=font, fill=text_color)
         y_text += (text_bbox[3] - text_bbox[1])
-
     slide_num_text = f"Slide {slide_number}"
     slide_num_font_size = 25
     try:
@@ -133,19 +113,13 @@ def generate_slide_image(text, slide_number, image_width=1080, image_height=1080
     slide_num_x = image_width - slide_num_width - 30
     slide_num_y = image_height - (slide_num_bbox[3] - slide_num_bbox[1]) - 30
     draw.text((slide_num_x, slide_num_y), slide_num_text, font=slide_num_font, fill=text_color)
-
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='PNG')
     img_byte_arr = img_byte_arr.getvalue()
-    
     return img_byte_arr
 
-# --- NEW: Helper function to create a zip archive from image data ---
+# --- Helper function to create a zip archive from image data (remains the same) ---
 def create_zip_archive(images_data):
-    """
-    Creates a zip archive from a list of dictionaries, where each dict
-    contains 'name' (filename for the zip) and 'data' (image bytes).
-    """
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED, False) as zip_file:
         for img_info in images_data:
@@ -167,7 +141,7 @@ user_url = st.text_input(
     key="url_input"
 )
 
-# --- Conditional Logic based on User Input ---
+# --- Conditional Logic based on User Input (remains largely the same) ---
 if user_url:
     print(f"DEBUG app.py: User entered URL: {user_url}")
     results_container = st.container() 
@@ -183,21 +157,18 @@ if user_url:
 
                 summary_chunks = split_summary_into_chunks(summary, max_chars_per_chunk=350)
                 if summary_chunks:
-                    # Store all generated image bytes to pass to the zip function
-                    all_slide_images_data = [] # List to store dicts: {'name': filename, 'data': bytes}
+                    col1, col2 = st.columns([3, 1])
 
-                    col1, col2 = st.columns([3, 1]) # Left for expanders, Right for download buttons
-
-                    with col1: # Left column for expanders
+                    with col1:
                         for i, chunk in enumerate(summary_chunks):
                             with st.expander(f"Slide {i+1} 💡", expanded=(i==0)):
                                 st.write(chunk)
 
-                    with col2: # Right column for image download buttons and new zip download
+                    with col2:
                         st.markdown("##### Download Slides as Images:")
                         
+                        all_slide_images_data = []
                         for i, chunk in enumerate(summary_chunks):
-                            # Generate image on demand when button is created (cached by Streamlit)
                             slide_image_bytes = generate_slide_image(chunk, i + 1)
                             all_slide_images_data.append({'name': f"slide_{i+1}.png", 'data': slide_image_bytes})
                             
@@ -206,17 +177,13 @@ if user_url:
                                 data=slide_image_bytes,
                                 file_name=f"slide_{i+1}.png",
                                 mime="image/png",
-                                key=f"download_slide_{i+1}" # Unique key for each button
+                                key=f"download_slide_{i+1}"
                             )
 
-                        # --- NEW: Download All as ZIP ---
-                        # Only show the "Download All" button if there are actual images to download
                         if all_slide_images_data: 
-                            st.markdown("---") # Separator
+                            st.markdown("---")
                             st.markdown("##### Download All Images:")
                             
-                            # Generate the zip data here (this function also needs to be cached if called often)
-                            # For simplicity, we call it directly, which might be slow if many images.
                             zip_data = create_zip_archive(all_slide_images_data)
 
                             st.download_button(
@@ -227,8 +194,8 @@ if user_url:
                                 key="download_all_slides_zip"
                             )
 
-                        st.markdown("---") # Separator after image/zip buttons
-                        st.download_button( # Keep full summary text download
+                        st.markdown("---")
+                        st.download_button(
                             label="Download Full Summary as Text",
                             data=summary,
                             file_name="summary.txt",
@@ -246,7 +213,7 @@ else:
 
 st.markdown("---")
 
-# --- About Section ---
+# --- About Section (MODIFIED with Donation Button) ---
 with st.expander("About This App"):
     st.markdown("""
     This application leverages advanced **Natural Language Processing (NLP)** to provide concise summaries of web articles.
@@ -254,7 +221,7 @@ with st.expander("About This App"):
     **How it Works:**
     1.  You provide a URL to a text-based webpage.
     2.  The app extracts the main textual content from that page.
-    3.  A powerful **Transformer model (BART-Large-CNN from Hugging Face)** is used to generate a summary. For longer articles, the model intelligently summarizes sections recursively to cover the entire content.
+    3.  A powerful **Transformer model (DistilBART-CNN from Hugging Face)** is used to generate a summary. For longer articles, the model intelligently summarizes sections recursively to cover the entire content.
     4.  The summary is then broken down into easy-to-digest "slides" using NLTK's sentence tokenization and Streamlit's collapsible expanders.
     
     **Built With:**
@@ -264,5 +231,16 @@ with st.expander("About This App"):
     * [NLTK](https://www.nltk.org/) for advanced text processing
     * [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) and [Requests](https://requests.readthedocs.io/en/latest/) for web content extraction
     """)
+
+    # --- NEW: Buy Me a Coffee Donation Button ---
+    st.markdown("---") # Separator for visual clarity
+    st.markdown(
+        """
+        If you find this app useful and would like to support its development, 
+        you can [**Buy Me a Coffee! ☕**](https://www.buymeacoffee.com/nrmlcnsmr) 
+        Your support helps keep this app running and improved. Thank you!
+        """
+    )
+    # IMPORTANT: Replace "YOUR_BUY_ME_A_COFFEE_USERNAME" with your actual username/link!
 
 st.write("Built with ❤️ by KD")
