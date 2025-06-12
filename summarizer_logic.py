@@ -7,15 +7,17 @@ import streamlit as st
 import torch
 
 # --- Constants for model and lengths ---
-MODEL_NAME = "google/pegasus-cnn_dailymail"
-MAX_MODEL_INPUT_TOKENS = 1024
+# CHANGED MODEL_NAME TO DISTILBART (for performance)
+MODEL_NAME = "sshleifer/distilbart-cnn-12-6" 
+MAX_MODEL_INPUT_TOKENS = 1024 # DistilBART also typically has a 1024 token limit
 CHUNK_OVERLAP_TOKENS = 50
 
+# --- Output Summary Lengths (adjustable for longer summaries) ---
 MIN_CHUNK_SUMMARY_LENGTH = 10
 MAX_CHUNK_SUMMARY_LENGTH = 150
 
-MIN_FINAL_SUMMARY_LENGTH = 150
-MAX_FINAL_SUMMARY_LENGTH = 400
+MIN_FINAL_SUMMARY_LENGTH = 150 # Aim for a more substantial final summary
+MAX_FINAL_SUMMARY_LENGTH = 400 # Allow the final summary to be quite long
 
 
 # --- Function to Load Summarizer Model and Tokenizer (remains the same) ---
@@ -46,7 +48,9 @@ def load_summarizer_resources():
 tokenizer, summarizer_pipeline_instance = load_summarizer_resources()
 
 
-# --- Function to Split Text into Token-Aware Chunks (remains the same) ---
+# --- All other functions (split_text_into_chunks_by_tokens, get_webpage_text, generate_summary) remain the same ---
+# They will now use the newly loaded DistilBART model and its tokenizer.
+
 def split_text_into_chunks_by_tokens(text, max_tokens, overlap_tokens):
     if not text:
         return []
@@ -65,8 +69,6 @@ def split_text_into_chunks_by_tokens(text, max_tokens, overlap_tokens):
             start_index = 0
     return chunks
 
-
-# --- Function to Fetch Webpage Text (remains the same) ---
 @st.cache_data
 def get_webpage_text(url):
     print(f"DEBUG summarizer_logic: Fetching content from URL: {url}")
@@ -133,8 +135,6 @@ def get_webpage_text(url):
         print(f"DEBUG summarizer_logic: Unexpected error during webpage processing: {e}")
         return None
 
-
-# --- Function to Generate Summary using Transformers (with recursive summarization & quality focus) ---
 @st.cache_data
 def generate_summary(text):
     if text is None:
@@ -238,7 +238,6 @@ def generate_summary(text):
             print(f"DEBUG summarizer_logic: ERROR: Exception during final summary generation: {e}")
 
     print("DEBUG summarizer_logic: Recursive summarization complete. Final summary returned.")
-    # --- NEW: Clean up special tokens like <n> ---
     cleaned_summary = final_summary_output.replace("<n>", "\n").strip()
     print(f"DEBUG summarizer_logic: Cleaned summary. Original length: {len(final_summary_output)} chars. Cleaned length: {len(cleaned_summary)} chars.")
-    return cleaned_summary # Return the cleaned summary
+    return cleaned_summary
