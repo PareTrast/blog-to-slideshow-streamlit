@@ -170,6 +170,14 @@ st.write(
     "Perfect for quick insights into long reads!"
 )
 
+ st.markdown(
+        """
+        If you find this app useful and would like to support its development, 
+        you can [**Buy Me a Coffee! ☕**](https://www.buymeacoffee.com/nrmlcnsmr) 
+        Your support helps keep this app running and improved. Thank you!
+        """
+    )
+
 user_url = st.text_input(
     "**Enter URL to Summarize:**",
     placeholder="e.g., https://www.nytimes.com/your-article-here",
@@ -268,12 +276,6 @@ with st.expander("About This App"):
     """)
 
     st.markdown("---")
-    st.markdown(
-        """
-        If you find this app useful and would like to support its development, 
-        you can [**Buy Me a Coffee! ☕**](https://www.buymeacoffee.com/nrmlcnsmr) 
-        Your support helps keep this app running and improved. Thank you!
-        """
-    )
+   
 
 st.write("Built with ❤️ by Your KD ")
